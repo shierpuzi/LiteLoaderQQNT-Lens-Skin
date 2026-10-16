@@ -1,0 +1,90 @@
+/* ============================================================================
+ * Lens 透镜 → QQ NT 动效层 v2
+ * 设计系统来源: ruiqichenbiec/design-systems · lens/lab/design-system (MIT)
+ *
+ * Lens 的运动身份 = 液体表达连续变化
+ *   elasticity .70 · spring cubic-bezier(.2, .9, .25, 1.22)（>1 即带过冲）
+ *   fast 160ms · normal 240ms · feedback 520ms
+ *
+ * ===== 本版的设计约束（v1 事故后的修正）=====
+ * v1 曾让 QQ 主窗口渲染冻结。事后分析：
+ *   - 诊断用的全文档 MutationObserver（对每个新增节点递归 getComputedStyle）是主要嫌疑；
+ *   - 给 QQ 动态浮层加 animation 且 fill-mode: both 也有嫌疑。
+ * 因此 v2 遵守三条铁律：
+ *   1. 只作用于【始终存在的静态元素】（导航项 / 联系人项 / 按钮）；
+ *      绝不出现 .q-popup / .q-dialog / .q-context-menu / .q-toast 等动态浮层类名。
+ *   2. 只用 CSS transition + 状态伪类（:active / :hover），
+ *      【零 @keyframes、零 animation、零 fill-mode】。
+ *   3. 不引入任何 JS 观察器。
+ *
+ * 为什么用 scale / translate 独立属性而不是 transform：
+ *   独立属性与元素既有的 transform 叠加而非互相覆盖，
+ *   不会破坏 QQ 自身的定位与居中。
+ * ========================================================================= */
+
+/* ---------- 1. 导航项：液体弹性按压（Lens 的「液体」最直观的落点） ---------- */
+body.q-theme-tokens-light .nav-item {
+  transition:
+    background var(--lg-fast) var(--lg-spring),
+    scale var(--lg-normal) var(--lg-spring) !important;
+}
+
+body.q-theme-tokens-light .nav-item:active {
+  scale: 0.92 !important;
+}
+
+/* ---------- 2. 联系人项：更小的位移，长列表里密集按压不该晃眼 ---------- */
+body.q-theme-tokens-light .recent-contact-item {
+  transition:
+    background var(--lg-fast) var(--lg-spring),
+    color var(--lg-fast) var(--lg-spring),
+    scale var(--lg-normal) var(--lg-spring) !important;
+}
+
+body.q-theme-tokens-light .recent-contact-item:active {
+  scale: 0.985 !important;
+}
+
+/* ---------- 3. 侧栏底部功能项：与导航项一致的力度 ---------- */
+body.q-theme-tokens-light .func-menu__item {
+  transition:
+    background var(--lg-fast) var(--lg-spring),
+    scale var(--lg-normal) var(--lg-spring) !important;
+}
+
+body.q-theme-tokens-light .func-menu__item:active {
+  scale: 0.94 !important;
+}
+
+/* ---------- 4. 发送按钮：精确选择器，不是全站 button ----------
+ * 实测：发送按钮不是 <button>，而是 div 组合：
+ *   最外层 .send-btn-wrap 才是画蓝色背景（rgb(40,117,237)·radius 10px·94x32）的元素，
+ *   内层 .send / .send-msg 只有文字与图标（60x32 / 28x28，背景透明）。
+ * 所以弹性必须加在 .send-btn-wrap 上；加在内层只有文字会缩放，蓝色块不动。
+ * 仍限定在消息输入区容器内，避免影响其他区域。
+ * --------------------------------------------------------- */
+body.q-theme-tokens-light .chat-input-area .send-btn-wrap {
+  transition:
+    background var(--lg-fast) var(--lg-spring),
+    scale var(--lg-normal) var(--lg-spring) !important;
+}
+
+body.q-theme-tokens-light .chat-input-area .send-btn-wrap:active {
+  scale: 0.94 !important;
+}
+
+/* ---------- 5. 无障碍：系统要求减少动态时全部落位 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  body.q-theme-tokens-light .nav-item:active,
+  body.q-theme-tokens-light .recent-contact-item:active,
+  body.q-theme-tokens-light .func-menu__item:active,
+  body.q-theme-tokens-light .chat-input-area .send-btn-wrap:active {
+    scale: 1 !important;
+  }
+  body.q-theme-tokens-light .nav-item,
+  body.q-theme-tokens-light .recent-contact-item,
+  body.q-theme-tokens-light .func-menu__item,
+  body.q-theme-tokens-light .chat-input-area .send-btn-wrap {
+    transition-duration: 0s !important;
+  }
+}

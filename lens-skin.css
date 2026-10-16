@@ -1,0 +1,164 @@
+/* ============================================================================
+ * Lens 透镜 → QQ NT 皮肤
+ * 设计系统来源: ruiqichenbiec/design-systems · lens/lab/design-system (MIT)
+ *
+ * 机制说明（实测）:
+ *   QQ 的主题令牌挂在 body.q-theme-tokens-light 上（暗色版为同级 i.q-theme-tokens-dark）。
+ *   QQ 的 --nt_* 派生令牌是【构建期预计算】的字面色值，不跟随 --brand_standard 变化。
+ *   实测: 改基色后 25 个蓝色系令牌仍是旧值 → 界面会出现两套蓝。
+ *   解法: 用 color-mix() 从唯一真源 --lg-accent 推导全部派生令牌。
+ *   实测 Chromium 144 支持 color-mix（QQ NT 9.9.33-52230 / LiteLoaderQQNT 5.2.1）。
+ * ========================================================================= */
+
+body.q-theme-tokens-light {
+  /* ---------- 1. Lens 令牌：唯一真源 ---------- */
+  /* lens/lab/design-system/tokens.js + tokens.css */
+  --lg-accent: #2875ed;          /* color.accent */
+  --lg-focus: #2576e8;           /* color.focus  */
+  --lg-text: #22252b;            /* color.text   */
+  --lg-muted: #6b7079;           /* color.muted  */
+  --lg-page: #f7f8fa;            /* color.page   */
+  --lg-solid: #eef2f8;           /* surface.solid */
+
+  /* material 'thick' → refraction .90 / blur .24 / dispersion .65 */
+  --lg-glass: rgba(245, 250, 255, 0.34);   /* surface.fallback */
+  --lg-glass-2: rgba(245, 250, 255, 0.22);
+  --lg-blur: 12px;
+
+  /* surface.shadow — Lens 的白色顶边高光 + 冷色投影 */
+  --lg-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65),
+               inset 1px 0 0 rgba(255, 255, 255, 0.25),
+               0 12px 24px -12px rgba(33, 53, 82, 0.32);
+
+  /* radius: chrome 14 / panel 34 / pill 999 */
+  --lg-chrome: 14px;
+  --lg-panel: 34px;
+  --lg-pill: 999px;
+
+  /* motion: spring cubic-bezier(.2,.9,.25,1.22) · fast 160 / normal 240 / feedback 520 */
+  --lg-spring: cubic-bezier(0.2, 0.9, 0.25, 1.22);
+  --lg-spring-soft: cubic-bezier(0.2, 0.9, 0.25, 1.05);
+  --lg-fast: 160ms;
+  --lg-normal: 240ms;
+  --lg-feedback: 520ms;
+
+  /* ---------- 2. QQ 基色 → Lens ---------- */
+  --text_primary: var(--lg-text) !important;
+  --text_secondary: var(--lg-muted) !important;
+  --brand_standard: var(--lg-accent) !important;
+  --brand_text: var(--lg-accent) !important;
+  --on_brand_primary: #ffffff !important;
+  --icon_primary: var(--lg-text) !important;
+  --icon_secondary_01: var(--lg-muted) !important;
+  --bg_top_standard: var(--lg-page) !important;
+  --bg_bottom_standard: var(--lg-solid) !important;
+  --bg_grey_standard: var(--lg-page) !important;
+  --bg_middle_standard: var(--lg-page) !important;
+  --bg_aio_3: var(--lg-page) !important;
+  --bg_list: var(--lg-glass) !important;
+  --fill_standard_secondary: rgba(34, 37, 43, 0.04) !important;
+  --divider-standard: rgba(34, 37, 43, 0.08) !important;
+
+  /* ---------- 3. 派生令牌补全（QQ 预计算值 → 从 --lg-accent 推导） ---------- */
+
+  /* 3a. 实心 accent 族 */
+  --overlay_active_brand: var(--lg-accent) !important;
+  --brand_light: var(--lg-accent) !important;
+  --divider-brand: var(--lg-accent) !important;
+  --badge-brand: var(--lg-accent) !important;
+  --tag_blue_text: var(--lg-accent) !important;
+  --button-primary-default: var(--lg-accent) !important;
+  --icon-brand: var(--lg-accent) !important;
+  --text-brand: var(--lg-accent) !important;
+  --text-badge: var(--lg-accent) !important;
+  --blue-standard: var(--lg-accent) !important;
+  --text_brand: var(--lg-accent) !important;
+  --text_link: var(--lg-accent) !important;
+  --text-link: var(--lg-accent) !important;
+
+  /* 3b. accent 的明暗变体 */
+  --hover-link: color-mix(in srgb, var(--lg-accent) 70%, #fff) !important;
+  --blue-light: color-mix(in srgb, var(--lg-accent) 70%, #fff) !important;
+  --blue-superlight: color-mix(in srgb, var(--lg-accent) 10%, #fff) !important;
+  --extend_blue: color-mix(in srgb, var(--lg-accent) 8%, #fff) !important;
+  --press-link: color-mix(in srgb, var(--lg-accent) 88%, #000) !important;
+  --blue-dark: color-mix(in srgb, var(--lg-accent) 88%, #000) !important;
+
+  /* 3c. alpha 阶梯（8 / 10 / 20 / 25 / 40 / 50 %） */
+  --nt_brand_standard_2_0_2_alpha: color-mix(in srgb, var(--lg-accent) 0%, transparent) !important;
+  --nt_brand_standard_2_8_2_alpha: color-mix(in srgb, var(--lg-accent) 8%, transparent) !important;
+  --nt_brand_standard_2_10_2_alpha: color-mix(in srgb, var(--lg-accent) 10%, transparent) !important;
+  --nt_brand_standard_2_20_2_alpha: color-mix(in srgb, var(--lg-accent) 20%, transparent) !important;
+  --nt_brand_standard_2_50_2_alpha: color-mix(in srgb, var(--lg-accent) 50%, transparent) !important;
+  --nt_brand_light_2_20_2_alpha: color-mix(in srgb, var(--lg-accent) 20%, transparent) !important;
+  --nt_brand_light_2_40_2_alpha: color-mix(in srgb, var(--lg-accent) 40%, transparent) !important;
+  --nt_overlay_active_brand_2_40_2_alpha: color-mix(in srgb, var(--lg-accent) 40%, transparent) !important;
+  --nt_tag_blue_2_10_2_alpha: color-mix(in srgb, var(--lg-accent) 10%, transparent) !important;
+  --nt_tag_blue_2_20_2_alpha: color-mix(in srgb, var(--lg-accent) 20%, transparent) !important;
+  --nt_tag_blue_2_25_2_alpha: color-mix(in srgb, var(--lg-accent) 25%, transparent) !important;
+  --nt_tag_blue_text_2_10_2_alpha: color-mix(in srgb, var(--lg-accent) 10%, transparent) !important;
+  --nt_text_link_2_50_2_alpha: color-mix(in srgb, var(--lg-accent) 50%, transparent) !important;
+  --tag_blue: color-mix(in srgb, var(--lg-accent) 20%, transparent) !important;
+
+  /* 3d. 混色（QQ 的 blend / overlay mix 族） */
+  --nt_brand_standard_2_blend_white_020_2_mix: color-mix(in srgb, var(--lg-accent) 80%, #fff) !important;
+  --nt_brand_standard_2_overlay_hover_brand_2_mix: color-mix(in srgb, var(--lg-accent) 92%, #000) !important;
+  --nt_brand_standard_2_overlay_pressed_brand_2_mix: color-mix(in srgb, var(--lg-accent) 84%, #000) !important;
+  --nt_overlay_active_brand_2_overlay_hover_brand_2_mix: color-mix(in srgb, var(--lg-accent) 92%, #000) !important;
+  --nt_text_link_2_overlay_hover_2_mix: color-mix(in srgb, var(--lg-accent) 92%, #000) !important;
+  --nt_text_link_2_overlay_pressed_2_mix: color-mix(in srgb, var(--lg-accent) 84%, #000) !important;
+
+  /* 3e. 自己的气泡：保持浅色（可读性），但换到 Lens 色相 */
+  --host_bubble_bg_css_value: color-mix(in srgb, var(--lg-accent) 22%, #fff) !important;
+  --bubble_host: color-mix(in srgb, var(--lg-accent) 22%, #fff) !important;
+  --bubble_host_1: color-mix(in srgb, var(--lg-accent) 22%, #fff) !important;
+  --bubble_host_2: color-mix(in srgb, var(--lg-accent) 22%, #fff) !important;
+  --bubble-host: color-mix(in srgb, var(--lg-accent) 22%, #fff) !important;
+  --nt_host_bubble_bg_css_value_2_40_2_alpha: color-mix(in srgb, var(--lg-accent) 40%, transparent) !important;
+  --nt_bubble_host_2_overlay_pressed_brand_2_mix: color-mix(in srgb, var(--lg-accent) 30%, #fff) !important;
+
+  /* ---------- 4. 玻璃承载信息 ---------- */
+}
+
+body.q-theme-tokens-light .sidebar,
+body.q-theme-tokens-light .recent-contact,
+body.q-theme-tokens-light .chat-header,
+body.q-theme-tokens-light .chat-func-bar,
+body.q-theme-tokens-light .chat-input-area,
+body.q-theme-tokens-light .chat-msg-area {
+  background: var(--lg-glass) !important;
+  backdrop-filter: blur(var(--lg-blur)) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(1.5) !important;
+  box-shadow: var(--lg-shadow) !important;
+}
+
+/* ---------- 5. 圆角：chrome / panel / pill ---------- */
+body.q-theme-tokens-light .nav-item,
+body.q-theme-tokens-light .q-context-menu,
+body.q-theme-tokens-light .q-dialog-main,
+body.q-theme-tokens-light .q-input,
+body.q-theme-tokens-light .q-pulldown-menu,
+body.q-theme-tokens-light .main-search {
+  border-radius: var(--lg-chrome) !important;
+}
+
+body.q-theme-tokens-light .sidebar__nav {
+  border-radius: 0 !important;
+}
+
+/* 联系人项：chrome 圆角 + 玻璃 hover */
+body.q-theme-tokens-light .recent-contact-item {
+  background: transparent !important;
+  border-radius: var(--lg-chrome) !important;
+}
+
+body.q-theme-tokens-light .recent-contact-item:hover {
+  background: var(--lg-glass) !important;
+}
+
+/* 选中项走 Lens accent */
+body.q-theme-tokens-light .recent-contact-item[class*="selected"],
+body.q-theme-tokens-light .recent-contact-item.q-active,
+body.q-theme-tokens-light .nav-item[class*="selected"] {
+  background: color-mix(in srgb, var(--lg-accent) 14%, transparent) !important;
+}
