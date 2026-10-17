@@ -1,4 +1,4 @@
-node_modules/
-*.zip
-.DS_Store
-Thumbs.db
+# 归档 / 备份目录不要放进插件扫描目录（会造成重复 slug，QQ 只加载其中一个）
+*-archive*/
+*-broken*/
+*.bak

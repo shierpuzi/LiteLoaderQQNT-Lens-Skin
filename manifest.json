@@ -3,8 +3,8 @@
     "type": "theme",
     "name": "Lens 透镜",
     "slug": "lens-skin",
-    "description": "把 Lens 设计体系映射到 QQ：主题令牌（玻璃 / 圆角，含全部派生品牌色）+ 弹性按压反馈 + Web Audio 实时合成音效（点击 / 悬浮 / 摩擦，可在设置页分别开关），不含任何音频文件。",
-    "version": "0.4.0",
+    "description": "把 Lens 设计体系映射到 QQ：主题令牌（玻璃 / 圆角，含全部派生品牌色）+ 可调面板透明度与高斯模糊 + GPU 渲染的全局鼠标光源（全部控件边缘迎光/背光联动）+ 弹性按压反馈 + Web Audio 实时合成音效（点击 / 悬浮 / 摩擦，可在设置页分别开关）+ 内置调试工具（元素选择器 / 限制光照渲染范围），不含任何音频文件。",
+    "version": "0.9.1",
     "icon": "./icon.png",
     "authors": [
         {
@@ -20,7 +20,7 @@
         "repo": "shierpuzi/LiteLoaderQQNT-Lens-Skin",
         "branch": "main",
         "release": {
-            "tag": "v0.4.0",
+            "tag": "v0.9.1",
             "file": "lens-skin.zip"
         }
     }

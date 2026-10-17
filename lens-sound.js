@@ -108,13 +108,31 @@ export class LensSound {
         return true;
     }
 
-    buffer(name, pcm) {
-        if (!this.cache.has(name)) {
-            const buf = this.context.createBuffer(1, pcm.length, this.context.sampleRate);
+    /*
+     * 惰性缓冲缓存。
+     *
+     * 【实测踩坑，改动前务必读】早期签名是 buffer(name, pcm)，
+     * 但 pcm 参数由调用方【提前求值】——即使缓存命中，
+     * synthesizeFriction() / synthesizeCue() 依然每次都跑一遍。
+     * 摩擦纹理是 2 秒噪声（约 96000 个采样 + 滤波运算），
+     * 滚动列表时每个滚轮事件都重算一次 → CPU/GC 爆炸 → 整个窗口卡死，
+     * 同时 startFriction 反复重启导致"沙沙声停不下来"。
+     * 改成接收工厂函数：只有缓存未命中时才真正合成。
+     */
+    buffer(name, makePcm) {
+        let buf = this.cache.get(name);
+        if (!buf) {
+            const pcm = makePcm();
+            buf = this.context.createBuffer(1, pcm.length, this.context.sampleRate);
             buf.copyToChannel(pcm, 0);
             this.cache.set(name, buf);
         }
-        return this.cache.get(name);
+        return buf;
+    }
+
+    /** 摩擦音是否正在播放（用于避免重复 startFriction 造成的重启爆音） */
+    get frictionActive() {
+        return !!this.friction;
     }
 
     play(name) {
@@ -127,7 +145,7 @@ export class LensSound {
         try {
             if (!this.ensureContext()) return false;
             if (this.context.state === 'suspended') this.context.resume();
-            const buf = this.buffer(name, synthesizeCue(cue, this.context.sampleRate));
+            const buf = this.buffer(name, () => synthesizeCue(cue, this.context.sampleRate));
             if (this.voices.size >= this.maxVoices) {
                 const oldest = this.voices.values().next().value;
                 try { oldest.stop(); oldest.disconnect(); } catch { }
@@ -150,7 +168,7 @@ export class LensSound {
         try {
             if (!this.ensureContext()) { this.frictionIntent = false; return false; }
             if (this.context.state === 'suspended') this.context.resume();
-            const buf = this.buffer('@friction', synthesizeFriction(this.context.sampleRate));
+            const buf = this.buffer('@friction', () => synthesizeFriction(this.context.sampleRate));
             const source = this.context.createBufferSource(), filter = this.context.createBiquadFilter(), gain = this.context.createGain();
             source.buffer = buf; source.loop = true;
             filter.type = 'bandpass'; filter.Q.value = .65;

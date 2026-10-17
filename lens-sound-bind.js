@@ -265,7 +265,11 @@ document.addEventListener("wheel", (event) => {
         boxState.set(box, { top, dir });
     }
 
-    if (!wheelDecay) sound.startFriction();
+    // 已经在响就不要再 startFriction：它内部第一行是 endFriction(true)，
+    // 反复调用会把沙沙声一次次掐掉重启 —— 听感上就是"声音停不下来"，
+    // 且每次都重建音频节点。判据直接用"摩擦音是否在播"，
+    // 比看计时器准确（边界分支会把计时器清零，反而放行重启）。
+    if (!sound.frictionActive) sound.startFriction();
     sound.updateFriction(Math.abs(event.deltaY) * 12, WHEEL_SCALE());
     clearTimeout(wheelDecay);
     wheelDecay = setTimeout(() => { wheelDecay = 0; sound.endFriction(); }, WHEEL_HOLD());

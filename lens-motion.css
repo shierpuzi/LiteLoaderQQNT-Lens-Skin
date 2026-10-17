@@ -23,36 +23,36 @@
  * ========================================================================= */
 
 /* ---------- 1. 导航项：液体弹性按压（Lens 的「液体」最直观的落点） ---------- */
-body.q-theme-tokens-light .nav-item {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .nav-item {
   transition:
     background var(--lg-fast) var(--lg-spring),
     scale var(--lg-normal) var(--lg-spring) !important;
 }
 
-body.q-theme-tokens-light .nav-item:active {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .nav-item:active {
   scale: 0.92 !important;
 }
 
 /* ---------- 2. 联系人项：更小的位移，长列表里密集按压不该晃眼 ---------- */
-body.q-theme-tokens-light .recent-contact-item {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item {
   transition:
     background var(--lg-fast) var(--lg-spring),
     color var(--lg-fast) var(--lg-spring),
     scale var(--lg-normal) var(--lg-spring) !important;
 }
 
-body.q-theme-tokens-light .recent-contact-item:active {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item:active {
   scale: 0.985 !important;
 }
 
 /* ---------- 3. 侧栏底部功能项：与导航项一致的力度 ---------- */
-body.q-theme-tokens-light .func-menu__item {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .func-menu__item {
   transition:
     background var(--lg-fast) var(--lg-spring),
     scale var(--lg-normal) var(--lg-spring) !important;
 }
 
-body.q-theme-tokens-light .func-menu__item:active {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .func-menu__item:active {
   scale: 0.94 !important;
 }
 
@@ -63,28 +63,28 @@ body.q-theme-tokens-light .func-menu__item:active {
  * 所以弹性必须加在 .send-btn-wrap 上；加在内层只有文字会缩放，蓝色块不动。
  * 仍限定在消息输入区容器内，避免影响其他区域。
  * --------------------------------------------------------- */
-body.q-theme-tokens-light .chat-input-area .send-btn-wrap {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .chat-input-area .send-btn-wrap {
   transition:
     background var(--lg-fast) var(--lg-spring),
     scale var(--lg-normal) var(--lg-spring) !important;
 }
 
-body.q-theme-tokens-light .chat-input-area .send-btn-wrap:active {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .chat-input-area .send-btn-wrap:active {
   scale: 0.94 !important;
 }
 
 /* ---------- 5. 无障碍：系统要求减少动态时全部落位 ---------- */
 @media (prefers-reduced-motion: reduce) {
-  body.q-theme-tokens-light .nav-item:active,
-  body.q-theme-tokens-light .recent-contact-item:active,
-  body.q-theme-tokens-light .func-menu__item:active,
-  body.q-theme-tokens-light .chat-input-area .send-btn-wrap:active {
+  body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .nav-item:active,
+  body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item:active,
+  body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .func-menu__item:active,
+  body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .chat-input-area .send-btn-wrap:active {
     scale: 1 !important;
   }
-  body.q-theme-tokens-light .nav-item,
-  body.q-theme-tokens-light .recent-contact-item,
-  body.q-theme-tokens-light .func-menu__item,
-  body.q-theme-tokens-light .chat-input-area .send-btn-wrap {
+  body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .nav-item,
+  body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item,
+  body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .func-menu__item,
+  body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .chat-input-area .send-btn-wrap {
     transition-duration: 0s !important;
   }
 }

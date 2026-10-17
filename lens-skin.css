@@ -3,14 +3,17 @@
  * 设计系统来源: ruiqichenbiec/design-systems · lens/lab/design-system (MIT)
  *
  * 机制说明（实测）:
- *   QQ 的主题令牌挂在 body.q-theme-tokens-light 上（暗色版为同级 i.q-theme-tokens-dark）。
+ *   QQ 的主题令牌挂在 body 上：浅色为 class q-theme-tokens-light，暗色为 q-theme-tokens-dark。
+ *   实测教训：早期版本把选择器写死成 body.q-theme-tokens-light，
+ *   于是【暗色主题下整套皮肤完全不生效】（元素匹配不到任何规则）。
+ *   现在统一用 body:is(.q-theme-tokens-light, .q-theme-tokens-dark) 同时覆盖两种主题。
  *   QQ 的 --nt_* 派生令牌是【构建期预计算】的字面色值，不跟随 --brand_standard 变化。
  *   实测: 改基色后 25 个蓝色系令牌仍是旧值 → 界面会出现两套蓝。
  *   解法: 用 color-mix() 从唯一真源 --lg-accent 推导全部派生令牌。
  *   实测 Chromium 144 支持 color-mix（QQ NT 9.9.33-52230 / LiteLoaderQQNT 5.2.1）。
  * ========================================================================= */
 
-body.q-theme-tokens-light {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) {
   /* ---------- 1. Lens 令牌：唯一真源 ---------- */
   /* lens/lab/design-system/tokens.js + tokens.css */
   --lg-accent: #2875ed;          /* color.accent */
@@ -21,9 +24,21 @@ body.q-theme-tokens-light {
   --lg-solid: #eef2f8;           /* surface.solid */
 
   /* material 'thick' → refraction .90 / blur .24 / dispersion .65 */
-  --lg-glass: rgba(245, 250, 255, 0.34);   /* surface.fallback */
-  --lg-glass-2: rgba(245, 250, 255, 0.22);
+  /* 玻璃底色：alpha 由 --lg-alpha 单独控制，设置页的"面板透明度"即改它。
+     默认值与 renderer 的 DEFAULT_CONFIG.panelOpacity 保持一致。 */
+  --lg-alpha: 0.34;
+  --lg-glass: rgb(245 250 255 / var(--lg-alpha));
+  /* 面板 backdrop 高斯模糊半径；设置页的"高斯模糊"即改它。
+     默认值与 renderer 的 DEFAULT_CONFIG.panelBlur 保持一致。 */
   --lg-blur: 12px;
+  /*
+   * backdrop-filter 的完整值，由 JS 按模糊半径写入：
+   *   模糊 > 0 → blur(Npx) saturate(1.5)
+   *   模糊 = 0 → none
+   * 实测意义：blur(0px) 仍会让浏览器为元素建立 backdrop root（合成成本照付），
+   * 而模糊为 0 时它没有任何视觉效果 —— 直接置 none 可省掉这份开销。
+   */
+  --lg-backdrop: blur(12px) saturate(1.5);
 
   /* surface.shadow — Lens 的白色顶边高光 + 冷色投影 */
   --lg-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65),
@@ -120,45 +135,136 @@ body.q-theme-tokens-light {
   /* ---------- 4. 玻璃承载信息 ---------- */
 }
 
-body.q-theme-tokens-light .sidebar,
-body.q-theme-tokens-light .recent-contact,
-body.q-theme-tokens-light .chat-header,
-body.q-theme-tokens-light .chat-func-bar,
-body.q-theme-tokens-light .chat-input-area,
-body.q-theme-tokens-light .chat-msg-area {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .sidebar,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .chat-header,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .chat-func-bar,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .chat-input-area,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .chat-msg-area {
   background: var(--lg-glass) !important;
-  backdrop-filter: blur(var(--lg-blur)) saturate(1.5) !important;
-  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(1.5) !important;
+  backdrop-filter: var(--lg-backdrop) !important;
+  -webkit-backdrop-filter: var(--lg-backdrop) !important;
   box-shadow: var(--lg-shadow) !important;
 }
 
+/*
+ * ---------- 4b.【已回退】让 QQ 自带表层跟随透明度 ----------
+ *
+ * 背景：像素堆叠实测确认，即使 --lg-glass 已是全透明，界面仍不透 ——
+ * 因为 QQ 自己在 .message-panel / .viewport-list__inner / .sidebar-nav 等
+ * 元素上刷了半透明白底（0.5 / 0.2 / …），它们不引用我们的变量。
+ * 因此曾把这些表层统一改写成 var(--lg-glass)，
+ * 这样"面板透明度"滑块确实能一路管到全透明（实测 allBlockersTransparent: true）。
+ *
+ * 【为什么又删掉了】实测 QQ 会卡死，两次：
+ *   把 QQ 自己的大面板改成半透明后，叠加我们面板的 backdrop-filter
+ *   与覆盖全窗口的 WebGL 光源画布，会让合成器持续走"与桌面合成"的慢路径，
+ *   最终整个主界面失去响应（强制结束进程才能恢复）。
+ *   第一次是 .global-container（窗口根容器），收窄到面板层后仍然卡死。
+ *
+ * 结论：**透明度的收益不值得让 QQ 卡死**，故整段回退。
+ * 现在"面板透明度"只作用于我们自己声明的那几层玻璃（第 4 节），
+ * 表现是"玻璃层变透"，而不是"整个界面变透"。这是刻意的取舍。
+ *
+ * 若将来仍想做到"整界面透明"，必须先把这两项成本去掉再试，且一次只放开一层：
+ *   1. 面板的 backdrop-filter（见 --lg-backdrop，模糊为 0 时已经是 none）
+ *   2. 全窗口 WebGL 光源画布
+ */
+
 /* ---------- 5. 圆角：chrome / panel / pill ---------- */
-body.q-theme-tokens-light .nav-item,
-body.q-theme-tokens-light .q-context-menu,
-body.q-theme-tokens-light .q-dialog-main,
-body.q-theme-tokens-light .q-input,
-body.q-theme-tokens-light .q-pulldown-menu,
-body.q-theme-tokens-light .main-search {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .nav-item,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .q-context-menu,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .q-dialog-main,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .q-input,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .q-pulldown-menu,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .main-search {
   border-radius: var(--lg-chrome) !important;
 }
 
-body.q-theme-tokens-light .sidebar__nav {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .sidebar__nav {
   border-radius: 0 !important;
 }
 
 /* 联系人项：chrome 圆角 + 玻璃 hover */
-body.q-theme-tokens-light .recent-contact-item {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item {
   background: transparent !important;
   border-radius: var(--lg-chrome) !important;
 }
 
-body.q-theme-tokens-light .recent-contact-item:hover {
+/*
+ * 【关键】把 QQ 原生的行背景一起收圆角。
+ *
+ * 那个"多出来的直角框"的真身（实测）：
+ *   QQ 自己的样式表 app://./renderer/css/52093.07732163.css 里有一条
+ *     .recent-contact-item--top .item__content { background: var(--overlay_top) }
+ *   （--overlay_top = #ffffff0f），而且它【没有 border-radius】。
+ *   只把父元素 .recent-contact-item 改成圆角是没用的：
+ *   子元素 .item__content 仍是 0 圆角，方角背景会从圆角父元素里"露角"，
+ *   看起来就是一个多余的方框。两种主题下都有（所以不是主题问题）。
+ *
+ * 解法：给子元素同样的圆角，让原生背景与父元素轮廓对齐。
+ */
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item .item__content {
+  border-radius: var(--lg-chrome) !important;
+}
+
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item:hover {
   background: var(--lg-glass) !important;
 }
 
 /* 选中项走 Lens accent */
-body.q-theme-tokens-light .recent-contact-item[class*="selected"],
-body.q-theme-tokens-light .recent-contact-item.q-active,
-body.q-theme-tokens-light .nav-item[class*="selected"] {
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item[class*="selected"],
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item.q-active,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .nav-item[class*="selected"] {
   background: color-mix(in srgb, var(--lg-accent) 14%, transparent) !important;
+}
+
+/* ============================================================================
+ * 6. 玻璃控件的边界（固定）+ 光源（GPU 渲染，见 lens-light.js）
+ *
+ * ===== 分工 =====
+ * 这一节只负责【固定边界】：1px 内描边 + 轻投影。
+ *   —— 高斯模糊调到 0 时控件也不会糊在壁纸里（这是"边界性低"的修复），
+ *      且它【不受 --lg-light 影响】：光源关掉也必须始终有轮廓。
+ *
+ * 方向性光影（迎光边 / 背光边 / 投影方向 / 跟随指针的高光）由
+ * lens-light.js 用一张覆盖全窗口的 WebGL2 画布统一渲染：
+ *   - 每个控件边缘用 SDF 求法线，套用与 Lens 相同的
+ *       directional = pow(max(dot(n2, light), 0), 7)
+ *       opposite    = pow(max(dot(n2, -light), 0), 7) * .52
+ *   - 一次 draw call 画出所有控件 → 所有控件共用同一个光源，真正联动
+ *   - 实测硬件加速（ANGLE / D3D11），CPU 开销测不出
+ *
+ * 为什么不再用 CSS 做方向性光影：
+ *   v0.7.0 只在 :hover 生效 → 一次只有鼠标下那一个控件有光影，其它不联动；
+ *   给所有控件都挂 CSS 阴影的方案实测 20fps（每帧 160+ 层模糊阴影）。
+ *
+ * 变量：
+ *   --lg-light  光照总强度 0..1（设置页写入 body）；0 = 关闭
+ * ------------------------------------------------------------------------- */
+
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) {
+  --lg-light: 1;
+}
+
+/*
+ * 基础边界：1px 内描边 + 轻投影。
+ *
+ * ===== 为什么不含 .func-menu__item（左下角邮箱/手机/更多）=====
+ * 它的真实圆角是 0px，而 .nav-item / .recent-contact-item 是 14px。
+ * 一视同仁地给它加圆角描边，就会画出一个【方框】—— 而且 GPU 侧
+ * 也会按 radius-0 画出一圈方形光带，两层叠在一起就是用户截图里
+ * 左下角那个多余的矩形。用户明确要求去掉，故把它移出目标集。
+ *
+ * ===== 不要在这里做方向性光影 =====
+ * 方向光由 GPU 画布统一渲染（见 lens-light.js），CSS 只负责固定边界。
+ */
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .recent-contact-item,
+body:is(.q-theme-tokens-light, .q-theme-tokens-dark) .nav-item {
+  box-shadow:
+    0 1px 2px rgba(33, 53, 82, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  transition:
+    box-shadow var(--lg-normal) var(--lg-spring),
+    background-color var(--lg-fast) var(--lg-spring);
 }
